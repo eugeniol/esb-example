@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<proxy xmlns="http://ws.apache.org/ns/synapse"
+	name="TestProxy"
+	startOnLoad="true"
+	statistics="enable"
+	trace="enable"
+	transports="http,https,local">
+	<target>
+		<inSequence>
+			<log level="custom">
+				<property expression="$axis2:REST_URL_POSTFIX" name="REST_URL_POSTFIX"/>
+			</log>
+			<enrich>
+				<source clone="true" type="envelope"/>
+				<target action="child" property="X_BODY" type="property"/>
+			</enrich>
+
+
+
+			<property expression="$axis2:REST_URL_POSTFIX" name="X_REST_URL_POSTFIX"/>
+			<property expression="$axis2:HTTP_METHOD" name="X_HTTP_METHOD"/>
+
+			<property name="REST_URL_POSTFIX" scope="axis2" action="remove"/>
+			<property name="HTTP_METHOD" scope="axis2" value="POST"/>
+
+			<log level="full">
+				<property name="MSG" value="PROXY IN"/>
+			</log>
+			<payloadFactory media-type="json">
+				<format>
+					{"REST_URL_POSTFIX":"$1"}
+				</format>
+				<args>
+					<arg evaluator="xml" expression="$axis2:REST_URL_POSTFIX"/>
+				</args>
+			</payloadFactory>
+			<callout serviceURL="http://localhost:3030/authenticate" method="/">
+				<source type="envelope"/>
+			</callout>
+
+			<log level="full"/>
+
+			
+			<log level="full">
+				<property name="is authenticated? " expression="//auth"/>
+			</log>
+			
+
+			<filter source="//auth" regex="true">
+				<then>
+
+					<!-- <property name="RESPONSE" value="true"/> -->
+
+					<!-- <header action="remove" name="To"/> -->
+
+
+					<property expression="get-property('X_REST_URL_POSTFIX')" name="REST_URL_POSTFIX" scope="axis2"/>
+					<property expression="get-property('X_HTTP_METHOD')" name="HTTP_METHOD" scope="axis2"/>
+					<log level="custom">
+						<property name="message" value="Original values"/>
+						<property expression="get-property('X_REST_URL_POSTFIX')" name="REST_URL_POSTFIX"/>
+						<property expression="get-property('X_HTTP_METHOD')" name="HTTP_METHOD"/>
+					</log>
+
+
+					<enrich>
+						<source clone="true" property="X_BODY" type="property"/>
+						<target type="envelope"/>
+					</enrich>
+					<send>
+						<endpoint>
+							<address uri="http://localhost:3030/some-proxy/"/>
+							<property name="SM_SESSIONID" scope="transport" value="THE SESSION ID"/>
+						</endpoint>
+					</send>
+				</then>
+				<else>
+					<drop/>
+				</else>
+			</filter> 
+
+		</inSequence>
+		<outSequence>
+			<send/>
+		</outSequence>
+	</target>
+	<description/>
+</proxy>

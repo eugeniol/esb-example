@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<api context="/ts" name="TreadstoneAPI" xmlns="http://ws.apache.org/ns/synapse">
+	<resource methods="POST GET" url-mapping="/*">
+		<inSequence>
+			<log>
+				<property name="message" value="Bienvenido a la api" />
+			</log>
+			<send>
+				<endpoint>
+					<http method="get" uri="http://localhost:3030/ts" />
+				</endpoint>
+			</send>
+		</inSequence>
+		<outSequence>
+			<send />
+		</outSequence>
+		<faultSequence />
+	</resource>
+</api>
+
